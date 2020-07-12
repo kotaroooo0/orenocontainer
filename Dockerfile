@@ -3,6 +3,11 @@ FROM golang:1.14
 RUN go get github.com/opencontainers/runc/libcontainer \
     golang.org/x/sys/unix
 
-COPY main.go main.go
+WORKDIR /go/src/github.com/kotaroooo0/orenocontainer
 
-ENTRYPOINT ["go", "run", "main.go"]
+COPY main.go ./
+COPY rootfs ./rootfs
+RUN go get -v .
+RUN go build main.go
+
+ENTRYPOINT ["./main"]
