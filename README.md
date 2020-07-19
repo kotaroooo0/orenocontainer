@@ -4,13 +4,21 @@
 
 コンテナを作ってみた。
 `libcontainer`を使ってコンテナを作るサンプルは何個かあったが、`libcontainer`のバージョン変更のせいか構造体が変わっていたりし、うまく動作しなかった。
-orenocontainerでも、まだ完璧には動作しない。
+orenocontainer でも、まだ完璧には動作しない。
 
 ## 実行方法
 
 Docker で Linux 環境を立てて、libcontainer でコンテナを作成する
 
 ```sh
+# orenocontainerのベースとしてalpine linuxを準備
+$ docker pull alpine
+$ docker run --name alpine alpine
+$ docker export alpine > alpine.tar
+$ mkdir rootfs
+$ tar -C rootfs -xvf alpine.tar
+
+# Linux環境を準備
 $ docker build -t orenocontainer .
 $ docker run --privileged -it orenocontainer /bin/bash
 
