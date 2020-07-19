@@ -52,6 +52,10 @@ func main() {
 		"CAP_KILL",
 		"CAP_AUDIT_WRITE",
 	}
+	var allowedDevices []*configs.DeviceRule
+	for _, device := range specconv.AllowedDevices {
+		allowedDevices = append(allowedDevices, &device.DeviceRule)
+	}
 	config := &configs.Config{
 		Rootfs: abs + "/rootfs",
 		Capabilities: &configs.Capabilities{
@@ -66,28 +70,19 @@ func main() {
 			{Type: configs.NEWUTS},
 			{Type: configs.NEWIPC},
 			{Type: configs.NEWPID},
-			{Type: configs.NEWUSER},
 			{Type: configs.NEWNET},
-			{Type: configs.NEWCGROUP},
 		}),
 		Cgroups: &configs.Cgroup{
-			Name:   "test-container",
-			Parent: "system",
+			Path: "/sys/fs/cgroup/",
 			Resources: &configs.Resources{
 				MemorySwappiness: nil,
-				// TODO: ここをspecconv.AllowedDevicesから
-				// Devices: nil,
+				Devices:          allowedDevices,
 			},
 		},
-		MaskPaths: []string{
-			"/proc/kcore",
-			"/sys/firmware",
-		},
-		ReadonlyPaths: []string{
-			"/proc/sys", "/proc/sysrq-trigger", "/proc/irq", "/proc/bus",
-		},
-		Devices:  specconv.AllowedDevices,
-		Hostname: "testing",
+		MaskPaths:     []string{"/proc/kcore", "/sys/firmware"},
+		ReadonlyPaths: []string{"/proc/sys", "/proc/sysrq-trigger", "/proc/irq", "/proc/bus"},
+		Devices:       specconv.AllowedDevices,
+		Hostname:      "testing",
 		Mounts: []*configs.Mount{
 			{
 				Source:      "proc",
@@ -129,20 +124,6 @@ func main() {
 				Flags:       defaultMountFlags | unix.MS_RDONLY,
 			},
 		},
-		UidMappings: []configs.IDMap{
-			{
-				ContainerID: 0,
-				HostID:      1000,
-				Size:        65536,
-			},
-		},
-		GidMappings: []configs.IDMap{
-			{
-				ContainerID: 0,
-				HostID:      1000,
-				Size:        65536,
-			},
-		},
 		Networks: []*configs.Network{
 			{
 				Type:    "loopback",
@@ -172,7 +153,6 @@ func main() {
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
-		Init:   true,
 	}
 
 	err = container.Run(process)
