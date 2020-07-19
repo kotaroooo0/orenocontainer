@@ -11,6 +11,8 @@ import (
 	"github.com/opencontainers/runc/libcontainer"
 	"github.com/opencontainers/runc/libcontainer/configs"
 	_ "github.com/opencontainers/runc/libcontainer/nsenter"
+	"github.com/opencontainers/runc/libcontainer/specconv"
+
 	"golang.org/x/sys/unix"
 )
 
@@ -22,19 +24,18 @@ func init() {
 		if err := factory.StartInitialization(); err != nil {
 			log.Fatal(err)
 		}
-		panic("--this line should have never been executed, congratulatios--")
+		panic("--this line should have never been executed, congratulations--")
 	}
 }
-func main() {
 
+func main() {
 	abs, _ := filepath.Abs("./")
-	factory, err := libcontainer.New(abs, libcontainer.Cgroupfs,
-		libcontainer.InitArgs(os.Args[0], "init"))
+	factory, err := libcontainer.New(abs, libcontainer.Cgroupfs, libcontainer.InitArgs(os.Args[0], "init"))
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-
+	defaultMountFlags := unix.MS_NOEXEC | unix.MS_NOSUID | unix.MS_NODEV
 	capabilities := []string{
 		"CAP_CHOWN",
 		"CAP_DAC_OVERRIDE",
@@ -51,7 +52,6 @@ func main() {
 		"CAP_KILL",
 		"CAP_AUDIT_WRITE",
 	}
-	defaultMountFlags := unix.MS_NOEXEC | unix.MS_NOSUID | unix.MS_NODEV
 	config := &configs.Config{
 		Rootfs: abs + "/rootfs",
 		Capabilities: &configs.Capabilities{
@@ -66,24 +66,27 @@ func main() {
 			{Type: configs.NEWUTS},
 			{Type: configs.NEWIPC},
 			{Type: configs.NEWPID},
+			{Type: configs.NEWUSER},
 			{Type: configs.NEWNET},
+			{Type: configs.NEWCGROUP},
 		}),
 		Cgroups: &configs.Cgroup{
 			Name:   "test-container",
 			Parent: "system",
 			Resources: &configs.Resources{
 				MemorySwappiness: nil,
-				AllowAllDevices:  nil,
-				AllowedDevices:   configs.DefaultAllowedDevices,
+				// TODO: ここをspecconv.AllowedDevicesから
+				// Devices: nil,
 			},
 		},
 		MaskPaths: []string{
-			"/proc/kcore", "/sys/firmware",
+			"/proc/kcore",
+			"/sys/firmware",
 		},
 		ReadonlyPaths: []string{
 			"/proc/sys", "/proc/sysrq-trigger", "/proc/irq", "/proc/bus",
 		},
-		Devices:  configs.DefaultAutoCreatedDevices,
+		Devices:  specconv.AllowedDevices,
 		Hostname: "testing",
 		Mounts: []*configs.Mount{
 			{
@@ -126,6 +129,20 @@ func main() {
 				Flags:       defaultMountFlags | unix.MS_RDONLY,
 			},
 		},
+		UidMappings: []configs.IDMap{
+			{
+				ContainerID: 0,
+				HostID:      1000,
+				Size:        65536,
+			},
+		},
+		GidMappings: []configs.IDMap{
+			{
+				ContainerID: 0,
+				HostID:      1000,
+				Size:        65536,
+			},
+		},
 		Networks: []*configs.Network{
 			{
 				Type:    "loopback",
@@ -141,6 +158,7 @@ func main() {
 			},
 		},
 	}
+
 	container, err := factory.Create("container-id", config)
 	if err != nil {
 		log.Fatal(err)
@@ -154,16 +172,22 @@ func main() {
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
+		Init:   true,
 	}
+
 	err = container.Run(process)
 	if err != nil {
 		container.Destroy()
 		log.Fatal(err)
 		return
 	}
+
+	// wait for the process to finish.
 	_, err = process.Wait()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// destroy the container.
 	container.Destroy()
 }
