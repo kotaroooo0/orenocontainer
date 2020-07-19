@@ -1,6 +1,12 @@
 # orenocontainer
 
-## Linux 環境
+## 概要
+
+コンテナを作ってみた。
+`libcontainer`を使ってコンテナを作るサンプルは何個かあったが、`libcontainer`のバージョン変更のせいか構造体が変わっていたりし、うまく動作しなかった。
+orenocontainerでも、まだ完璧には動作しない。
+
+## 実行方法
 
 Docker で Linux 環境を立てて、libcontainer でコンテナを作成する
 
@@ -21,3 +27,13 @@ $ hostname
 $ exit
 (Dokerコンテナに戻る)
 ```
+
+## 参考
+
+https://github.com/opencontainers/runc/tree/fbf047bf2fcb5938abd50b17e3592f9bf8ce7882/libcontainer
+
+https://github.com/opencontainers/runc/blob/fbf047bf2fcb5938abd50b17e3592f9bf8ce7882/libcontainer/integration/template_test.go
+
+https://ascii.jp/elem/000/001/502/1502967/
+
+https://github.com/budougumi0617/gsp/tree/master/ch17/container
