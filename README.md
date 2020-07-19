@@ -4,13 +4,13 @@
 
 Docker で Linux 環境を立てて、libcontainer でコンテナを作成する
 
-```
+```sh
 $ docker build -t orenocontainer .
 $ docker run --privileged -it orenocontainer /bin/bash
 
 # Dockerコンテナ内
 $ orenocontainer
-/bin/sh: 0: can't access tty; job control turned off
+/bin/sh: 0: can\'t access tty; job control turned off
 
 # orenocontainer内
 $ go
